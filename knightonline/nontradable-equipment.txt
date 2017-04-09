@@ -1,0 +1,33 @@
+/*
+
+This small hack allows players to equip nontradable items to their characters as weapons/armor (KnightOnline game server v1299)
+
+
+Game context:
+	Items having a required race of '20' are prevented from being traded (typically quest items)
+	This race requirement prevents any weapons/armor with this value from being equipped
+
+*/
+
+
+Address      Hex dump          Instruction                       Comments
+004A1BAF     /E9 082B0000      JMP 004A46BC                      jump to code cave
+004A1BB4     |90               NOP
+004A1BB5     |90               NOP
+004A1BB6     |90               NOP
+004A1BB7     |90               NOP
+004A1BB8     |90               NOP
+004A1BB9     |90               NOP
+004A1BBA     |90               NOP
+004A1BBB     |90               NOP
+004A1BBC     |90               NOP
+004A1BBD     |90               NOP
+
+
+Address       Hex dump         Instruction                       Comments
+004A46BC      3C 14            CMP AL,14                         Check if the item has the nontradable "Race Requirement" (20)
+004A46BE    ^ 0F84 FAD4FFFF    JE 004A1BBE                       ---Continue checking the other item requirements for equipment
+004A46C4      8B8E 98800000    MOV ECX,DWORD PTR DS:[ESI+8098]   Load the player's stats
+004A46CA      3A41 4D          CMP AL,BYTE PTR DS:[ECX+4D]       Check if the player's race matches the item's requirement
+004A46CD    ^ 75 C5            JNE SHORT 004A4694                ---Reject the request for equipment
+004A46CF    ^ E9 EAD4FFFF      JMP 004A1BBE                      ---Continue checking the other item requirements for equipment
