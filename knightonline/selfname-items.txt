@@ -1,0 +1,110 @@
+/*
+
+This hack inserts the player's name into specific game items for the KnightOnline game client (US v1299)
+
+This was done mainly for learning purposes. For the KnightOnline game, this brings newer items into an older version of the game (~2004).
+
+Main Outline:
+	When loading:
+		Save the player's name to an unused section of memory while (otherwise the string is removed after rendering)
+	Before rendering item data for unique items:
+		1. Find '%s' in unique item names
+		2. Save a copy of the original item name to an unused section of memory
+		3. Remove the unused padding in the item name from this copy
+		4. Use sprintf to overwrite the original item name with '%s' replaced with the players name, using the copied item name as the template
+		5. Alter the stack to return to a custom function after rendering the item
+	After the rendering process for the matched item:
+		1. Find the pointers for the original buffer and the backup buffer
+		2. Replace the original buffer with the backup buffer
+		3. Return to the natural execution flow
+
+The item names in the game client's database have been altered to simplify this process:
+	'Dagger of <selfname>(+1)' ---> 'Dagger of %s(+1)                                '
+
+The game client is an i386 Windows application. These hacks were developed and applied using OllyDbg.
+
+*/
+
+Address------Hex dump-------Instruction----------------------------------------------------comments--------------------------------------------
+004D67E2     E9 4EBF1C00    JMP KnightOn.006A2735                                       ;  jump to code cave (handle selfname uniques)
+
+
+005C89D7     0F8E 2D9D0D00  JLE KnightOn.006A270A                                       ;  jump to code cave (backup struserid)
+005C89DD     C64424 10 00   MOV BYTE PTR SS:[ESP+10],0
+005C89E2     EB 07          JMP SHORT KnightOn.005C89EB
+005C89E4     90             NOP
+005C89E5     90             NOP
+005C89E6     90             NOP
+
+006A270A   > 56             PUSH ESI                                                    ;  cave entrance, backup ESI
+006A270B   . 8B73 08        MOV ESI,DWORD PTR DS:[EBX+8]                                ;  load struserid offset to REPS source (ESI)
+006A270E   . 03F0           ADD ESI,EAX                                                 ;  ---continued
+006A2710   . 8A4E FF        MOV CL,BYTE PTR DS:[ESI-1]                                  ;  load struserid length to REPS length (ECX)
+006A2713   . 81E1 FF000000  AND ECX,0FF                                                 ;  ---truncate value to one byte
+006A2719   . BF C32B8200    MOV EDI,KnightOn.00822BC3                                   ;  load our memory cave offset to REPS destination (EDI)
+006A271E   . 884F FF        MOV BYTE PTR DS:[EDI-1],CL                                  ;  copy struserid length to memory cave
+006A2721   . F3:A4          REP MOVS BYTE PTR ES:[EDI],BYTE PTR DS:[ESI]                ;  copy struserid to memory cave
+006A2723   . C607 00        MOV BYTE PTR DS:[EDI],0                                     ;  ---append 0 to end of string
+006A2726   . A0 C22B8200    MOV AL,BYTE PTR DS:[822BC2]                                 ;  read struserid length
+006A272B   . 884424 14      MOV BYTE PTR SS:[ESP+14],AL                                 ;  copy struserid length to stack
+006A272F   . 5E             POP ESI                                                     ;  restore ESI
+006A2730   .^E9 B662F2FF    JMP KnightOn.005C89EB                                       ;  leave code cave
+
+006A2735   > E8 8608D6FF    CALL KnightOn.00402FC0                                      ;  cave entrance, load unique item data
+006A273A   . 56             PUSH ESI                                                    ;  backup ESI
+006A273B   . 8B70 04        MOV ESI,DWORD PTR DS:[EAX+4]                                ;  load stritem pointer
+006A273E   . 8A48 08        MOV CL,BYTE PTR DS:[EAX+8]                                  ;  load stritem length
+006A2741   . 81E1 FF000000  AND ECX,0FF                                                 ;  ---truncate value to one byte
+006A2747   > 84C9           TEST CL,CL                                                  ;  check remaining stritem length
+006A2749   . 74 0C          JE SHORT KnightOn.006A2757                                  ;  ---no bytes left, leave loop
+006A274B   . 8A1E           MOV BL,BYTE PTR DS:[ESI]                                    ;  load current byte
+006A274D   . 80FB 25        CMP BL,25                                                   ;  compare current byte to '%'
+006A2750   . 74 0B          JE SHORT KnightOn.006A275D                                  ;  ---bytes match, leave loop
+006A2752   . FEC9           DEC CL                                                      ;  decrease remaining bytes
+006A2754   . 46             INC ESI                                                     ;  increase stritem pointer
+006A2755   .^EB F0          JMP SHORT KnightOn.006A2747                                 ;  continue loop
+006A2757   > 5E             POP ESI                                                     ;  leave code cave, '%' not found
+006A2758   .^E9 8A40E3FF    JMP KnightOn.004D67E7                                       ;  ---continued
+006A275D   > 83C6 06        ADD ESI,6                                                   ;  '%' found
+006A2760   . C606 00        MOV BYTE PTR DS:[ESI],0                                     ;  truncate stritem to remove padding
+006A2763   . 80E9 06        SUB CL,6                                                    ;  calculate number of padded bytes
+006A2766   . 8A58 08        MOV BL,BYTE PTR DS:[EAX+8]                                  ;  load total string length
+006A2769   . 2AD9           SUB BL,CL                                                   ;  calculate new string length
+006A276B   . 8858 08        MOV BYTE PTR DS:[EAX+8],BL                                  ;  copy new string length to item data
+006A276E     8B70 04        MOV ESI,DWORD PTR DS:[EAX+4]                                ;  load stritem pointer to REPS source (ESI)
+006A2771     BF E92B8200    MOV EDI,KnightOn.00822BE9                                   ;  load our memory cave offset to REPS destination (EDI)
+006A2776     8977 FB        MOV DWORD PTR DS:[EDI-5],ESI                                ;  copy the orig stritem pointer to our memory cave
+006A2779     885F FF        MOV BYTE PTR DS:[EDI-1],BL                                  ;  copy updated stritem length to memory cave
+006A277C     8ACB           MOV CL,BL                                                   ;  load stritem length to REPS length (ECX)
+006A277E     81E1 FF000000  AND ECX,0FF                                                 ;  ---truncate value
+006A2784     F3:A4          REP MOVS BYTE PTR ES:[EDI],BYTE PTR DS:[ESI]                ;  copy the string to memory cave
+006A2786     C607 00        MOV BYTE PTR DS:[EDI],0                                     ;  truncate the string
+006A2789     50             PUSH EAX                                                    ;  backup EAX
+006A278A     68 C32B8200    PUSH KnightOn.00822BC3                                      ;  sprintf, arg3=struserid
+006A278F     68 E92B8200    PUSH KnightOn.00822BE9                                      ;  sprintf, arg2=copied stritem template
+006A2794     FF70 04        PUSH DWORD PTR DS:[EAX+4]                                   ;  sprintf, arg1=original stritem location
+006A2797     E8 031BFDFF    CALL KnightOn.0067429F                                      ;  ---call sprintf
+006A279C     83C4 0C        ADD ESP,0C                                                  ;  restore stack
+006A279F     58             POP EAX                                                     ;  restore EAX
+006A27A0     8A48 08        MOV CL,BYTE PTR DS:[EAX+8]                                  ;  load item original stritem length
+006A27A3     020D C22B8200  ADD CL,BYTE PTR DS:[822BC2]                                 ;  add struserid length
+006A27A9     80E9 02        SUB CL,2                                                    ;  remove '%s' length
+006A27AC     8848 08        MOV BYTE PTR DS:[EAX+8],CL                                  ;  update stritem length (temporary data)
+006A27AF     5E             POP ESI                                                     ;  restore ESI
+006A27B0     8BFC           MOV EDI,ESP                                                 ;  calculate offset of RETN pointer we wanna hijack
+006A27B2     81C7 EC010000  ADD EDI,1EC                                                 ;  ---continued
+006A27B8     36:C707 C4276A>MOV DWORD PTR SS:[EDI],KnightOn.006A27C4                    ;  replace RETN pointer with ours
+006A27BF    ^E9 2340E3FF    JMP KnightOn.004D67E7                                       ;  leave code cave, stritem has been updated
+
+006A27C4     56             PUSH ESI                                                    ;  cave entrance, backup ESI
+006A27C5     57             PUSH EDI                                                    ;  backup EDI
+006A27C6     BE E92B8200    MOV ESI,KnightOn.00822BE9                                   ;  load stritem copy to REPS source (ESI)
+006A27CB     8B7E FB        MOV EDI,DWORD PTR DS:[ESI-5]                                ;  load updated stritem to REPS destination (EDI)
+006A27CE     8A4E FF        MOV CL,BYTE PTR DS:[ESI-1]                                  ;  load the stritem copy length to REPS length (ECX)
+006A27D1     81E1 FF000000  AND ECX,0FF                                                 ;  ---truncate value
+006A27D7     F3:A4          REP MOVS BYTE PTR ES:[EDI],BYTE PTR DS:[ESI]                ;  restore stritem with its copy
+006A27D9     C607 00        MOV BYTE PTR DS:[EDI],0                                     ;  truncate the string
+006A27DC     5F             POP EDI                                                     ;  restore EDI
+006A27DD     5E             POP ESI                                                     ;  restore ESI
+006A27DE    ^E9 5E9CFAFF    JMP KnightOn.0064C441                                       ;  continue to natural RETN, stritem has been restored
+
