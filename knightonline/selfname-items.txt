@@ -6,7 +6,7 @@ This was done mainly for learning purposes. For the KnightOnline game, this brin
 
 Main Outline:
 	When loading:
-		Save the player's name to an unused section of memory while (otherwise the string is removed after rendering)
+		1. Save the player's name to an unused section of memory (otherwise the string is removed after rendering)
 	Before rendering item data for unique items:
 		1. Find '%s' in unique item names
 		2. Save a copy of the original item name to an unused section of memory
