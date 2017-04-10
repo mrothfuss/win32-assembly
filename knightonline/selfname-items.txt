@@ -23,6 +23,8 @@ The item names in the game client's database have been altered to simplify this 
 
 The game client is an i386 Windows application. These hacks were developed and applied using OllyDbg.
 
+The hardest part was tracking down the functions of interest. The funnest part was hacking the stack @006A27B8
+
 */
 
 Address------Hex dump-------Instruction----------------------------------------------------comments--------------------------------------------
