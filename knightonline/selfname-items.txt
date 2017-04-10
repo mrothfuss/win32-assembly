@@ -2,7 +2,7 @@
 
 This hack inserts the player's name into specific game items for the KnightOnline game client (US v1299)
 
-This was done mainly for learning purposes. For the KnightOnline game, this brings newer items into an older version of the game (~2004).
+This was done mainly for fun/practice. In the KnightOnline game, this patch brings newer items into an older version of the game (~2004).
 
 Main Outline:
 	When loading:
