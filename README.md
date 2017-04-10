@@ -1,9 +1,7 @@
 # win32-assembly
 
-a growing collection of assembly hacks I have written to improve old games
+I typically only write assembly to hack/develop old games. I've shared my patches for any other developers to use.
 
-shared for any interested old game hackers/developers
-
-latest additions:
+recent fun:
 
 <a href="https://github.com/mrothfuss/win32-assembly/blob/master/knightonline/selfname-items.txt">Knight Online / selfname patch</a> (~70 lines)
