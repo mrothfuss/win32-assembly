@@ -1,14 +1,6 @@
 /*
-
-This small hack allows players to equip nontradable items to their characters as weapons/armor (KnightOnline game server v1299)
-
-
-Game context:
-	Items having a required race of '20' are prevented from being traded (typically quest items)
-	This race requirement prevents any weapons/armor with this value from being equipped
-
+	enable the equipment of non-tradable items (Required-Race = 20)
 */
-
 
 Address      Hex dump          Instruction                       Comments
 004A1BAF     /E9 082B0000      JMP 004A46BC                      jump to code cave
@@ -31,3 +23,27 @@ Address       Hex dump         Instruction                       Comments
 004A46CA      3A41 4D          CMP AL,BYTE PTR DS:[ECX+4D]       Check if the player's race matches the item's requirement
 004A46CD    ^ 75 C5            JNE SHORT 004A4694                ---Reject the request for equipment
 004A46CF    ^ E9 EAD4FFFF      JMP 004A1BBE                      ---Continue checking the other item requirements for equipment
+
+/*
+	enable GMs to access all zones
+*/
+
+Address      Hex dump       Instruction                          Comments
+0049A44A     8BBE 48870000  MOV EDI,DWORD PTR DS:[ESI+8748]
+0049A450     BA C9000000    MOV EDX,0C9
+0049A455     8B86 98800000  MOV EAX,DWORD PTR DS:[ESI+8098]      Load character pointer
+0049A45B     8078 71 00     CMP BYTE PTR DS:[EAX+71],0           Check authority (GM = 0)
+0049A45F     0F85 C0000000  JNZ Ebenezer.0049A525
+0049A465     8A9B 7C010400  MOV BL,BYTE PTR DS:[EBX+4017C]
+0049A46B     885D FF        MOV BYTE PTR SS:[EBP-1],BL
+0049A46E     E9 1D050000    JMP Ebenezer.0049A990
+
+
+Address      Hex dump       Instruction
+0049A51A    ^E9 2BFFFFFF    JMP Ebenezer.0049A44A
+0049A51F     90             NOP
+0049A520     90             NOP
+0049A521     90             NOP
+0049A522     90             NOP
+0049A523     90             NOP
+0049A524     90             NOP
