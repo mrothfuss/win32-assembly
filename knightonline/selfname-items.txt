@@ -2,11 +2,11 @@
 
 This hack inserts the player's name into specific game items for the KnightOnline game client (US v1299)
 
-This was done mainly for learning purposes. For the KnightOnline game, this brings newer items into an older version of the game (~2004).
+This was done mainly for fun/practice. In the KnightOnline game, this patch brings newer items into an older version of the game (~2004).
 
 Main Outline:
 	When loading:
-		Save the player's name to an unused section of memory while (otherwise the string is removed after rendering)
+		1. Save the player's name to an unused section of memory (otherwise the string is removed after rendering)
 	Before rendering item data for unique items:
 		1. Find '%s' in unique item names
 		2. Save a copy of the original item name to an unused section of memory
@@ -22,6 +22,8 @@ The item names in the game client's database have been altered to simplify this 
 	'Dagger of <selfname>(+1)' ---> 'Dagger of %s(+1)                                '
 
 The game client is an i386 Windows application. These hacks were developed and applied using OllyDbg.
+
+The hardest part was tracking down the functions of interest. The funnest part was hacking the stack @006A27B8
 
 */
 
